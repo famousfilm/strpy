@@ -1,7 +1,7 @@
 # strpy
-String Python (or stringify-python) is an object-to-string converter that respects python types. If JSON got XML pregnant and genetic engineers altered the baby's DNA to include python, this would be the result.
+String Python (or stringify-python) is an object-to-ascii-string converter that respects python types. If JSON got XML pregnant and genetic engineers altered the baby's DNA to include python, this would be the result.
 ## Installation
-I dunno. Copy the code for all I care.
+You'll have to copy the code until I get it pip-friendly.
 ## Usage
 Say you have a big dict (or list or set or whatever) that you want to be TOTALLY flat ascii -- no single- or double-quotes, no backslashes, no unicode, nothing...
 ```
@@ -59,19 +59,19 @@ If you don't believe me, you can do this...
 origdict == complexdd
 ```
 
-...which will return `True`. I promise.
+...which I promise will return `True`.
 
 ## Contributing
 
 1. Fork!
-2. Update with a feature branch: `git checkout -b some-tests-finally-you-jerk`
+2. Update with a feature branch: `git checkout -b some-tests-finally`
 3. Commit to the cause: `git commit -am 'Now there are tests AND proper python etiquette for distributing code.'`
-4. K... Push to the branch: `git push origin some-tests-finally-you-jerk`
-5. Submit a "PR", which I'm told is short for "pull request".
+4. K... Push to the branch: `git push origin some-tests-finally`
+5. Submit a pull request.
 
 ## History
 
-One day, I might write a test, but I'm pretty sure it's bullet-proof.
+Needs tests and an optimization for decoding unicode text -- the text might not have any unicode characters, in which case it'd be better not to run through the process of trying to substitute back in unicode characters. 
 
 ## Credits
 
@@ -79,4 +79,4 @@ I am Chris.
 
 ## License
 
-Just don't say you wrote it yourself, you hack. Link to here or something.
+You're free to use this for whatever purposes you desire, just link here and give credit, please. Thanks!
