@@ -56,7 +56,7 @@ class __STRPY(object):
         found = re.findall(self.unicode_key_regex, ss)
         if found:
             for k in found:
-                if k in rev_unicode_map.keys():
+                if k in self.rev_unicode_map.keys():
                     ss = ss.replace(k, self.rev_unicode_map[k])
         return ss
 
