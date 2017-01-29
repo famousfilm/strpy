@@ -14,6 +14,8 @@ class __STRPY(object):
             '\\': "{/bs/}", # backslash
         }
         self.unicode_map = dict([(unichr(i), '{/%s/}' % i) for i in xrange(127, maxunicode + 1)])
+        self.unicode_key_regex = r"\{/[0-9]{3,5}/\}"
+        self.rev_unicode_map = dict([(v, k) for k, v in self.unicode_map.iteritems()])
         self.items = {
             'in': int,
             'st': self.__stringit,
@@ -50,8 +52,12 @@ class __STRPY(object):
 
     def __unicodeit(self, ss):
         ss = unicode(self.__stringit(ss))
-        for k, v in self.unicode_map.iteritems():
-            ss = ss.replace(v, k)
+        # all of the unicode chars in the `unicode_map` fit this regex. performance boost.
+        found = re.findall(self.unicode_key_regex, ss)
+        if found:
+            for k in found:
+                if k in rev_unicode_map.keys():
+                    ss = ss.replace(k, self.rev_unicode_map[k])
         return ss
 
     def __set_type(self, ss, stype):
