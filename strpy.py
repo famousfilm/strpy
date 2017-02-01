@@ -1,20 +1,31 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from sys import maxunicode
 import re
 
+__version__ = '0.1.1'
+
+__author__ = 'Chris Babiak <chrisb@biak.co>'
+
 class __STRPY(object):
     """
-    An object-to-string converter that respects python types. Also escapes backslashes or quotes so
-    there are no "strings 'within' \\"the\\" string".
+    An object-to-string converter that respects the following python types:
+    dict, list, set, tuple, frozenset, str, unicode, int, float, long, bool, complex
+    Also escapes backslashes or quotes so there are no "strings 'within' \\"the\\" string".
     """
 
     def __init__(self, *args, **kwargs):
         self.replace_map = {
-            '"': "{/dq/}", # double-quote
-            "'": "{/sq/}", # single-quote
-            '\\': "{/bs/}", # backslash
+            '"': "{/d/}", # double-quote
+            "'": "{/s/}", # single-quote
+            '\\': "{/b/}", # backslash
         }
-        self.unicode_map = dict([(unichr(i), '{/%s/}' % i) for i in xrange(127, maxunicode + 1)])
-        self.unicode_key_regex = r"\{/[0-9]{3,5}/\}"
+        self.min_char = 127
+        self.max_char = maxunicode
+        self.unicode_map = dict(
+            [(unichr(i), '{/%s/}' % i) for i in xrange(self.min_char, self.max_char + 1)])
+        self.unicode_key_regex = r"\{/[0-9]{3,5}/\}" # must be numbers
+        self.reserved_regex = re.compile(r"\{/[0-9]{3,5}/\}|\{/d/\}|\{/s/\}|\{/b/\}")
         self.rev_unicode_map = dict([(v, k) for k, v in self.unicode_map.iteritems()])
         self.items = {
             'in': int,
@@ -89,7 +100,7 @@ class __STRPY(object):
             ttype = self.__typify(obj)
             full_str += "{%s}%s{/%s}" % (ttype, obj, ttype)
         elif isinstance(obj, (str, unicode)):
-            if any(map(lambda x: x in obj, self.replace_map.values() + self.unicode_map.values())):
+            if re.search(self.reserved_regex, obj):
                 raise self.StrpyError('The str "{}" has tag syntax reserved for STRPY.'.format(obj))
             try:
                 obj.encode('ascii')
@@ -102,7 +113,7 @@ class __STRPY(object):
             full_str += "{%s}%s{/%s}" % (ttype, obj, ttype)
         else:
             ttype = self.__typify(obj)
-            raise self.StrpyError('STRPY does not support {}.'.format(ttype))
+            raise self.StrpyError('STRPY does not support {}.'.format(str(type(obj))))
         return str(full_str)
 
     def dumps(self, obj):
@@ -152,4 +163,5 @@ class __STRPY(object):
             result = self.__set_type(foundlist, keyhead)
         return result
 
-strpy = __STRPY()
+dumps = __STRPY().dumps
+loads = __STRPY().loads
