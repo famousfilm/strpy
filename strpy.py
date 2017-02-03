@@ -15,17 +15,15 @@ class __STRPY(object):
     """
 
     def __init__(self, *args, **kwargs):
-        self.replace_map = {
-            '"': "{/d/}", # double-quote
-            "'": "{/s/}", # single-quote
-            '\\': "{/b/}", # backslash
-        }
+        self.str_replace_map = dict([(o, "{/%s/}" % ord(o)) for o in ('"', "'", '\\')])
+        self.rev_str_replace_map = dict([(v, k) for k, v in self.str_replace_map.iteritems()])
+        self.str_key_regex = re.compile(r"'|\\|\"")
         self.min_char = 127
         self.max_char = maxunicode
+        self.unicode_key_regex = r"\{/[0-9]{3,5}/\}" # must be numbers
+        self.reserved_regex = re.compile(r"\{/[0-9]{2,5}/\}")
         self.unicode_map = dict(
             [(unichr(i), '{/%s/}' % i) for i in xrange(self.min_char, self.max_char + 1)])
-        self.unicode_key_regex = r"\{/[0-9]{3,5}/\}" # must be numbers
-        self.reserved_regex = re.compile(r"\{/[0-9]{3,5}/\}|\{/d/\}|\{/s/\}|\{/b/\}")
         self.rev_unicode_map = dict([(v, k) for k, v in self.unicode_map.iteritems()])
         self.items = {
             'in': int,
@@ -57,8 +55,8 @@ class __STRPY(object):
         return False
 
     def __stringit(self, ss):
-        for k, v in self.replace_map.iteritems():
-            ss = ss.replace(v, k)
+        if re.search(self.reserved_regex, ss):
+            ss = self.__replace_repeat(ss, self.rev_str_replace_map)
         return str(ss)
 
     def __unicodeit(self, ss):
@@ -66,13 +64,19 @@ class __STRPY(object):
         # all of the unicode chars in the `unicode_map` fit this regex. performance boost.
         found = re.findall(self.unicode_key_regex, ss)
         if found:
+            found = [k for k in found if k in self.rev_unicode_map.keys()]
             for k in found:
-                if k in self.rev_unicode_map.keys():
-                    ss = ss.replace(k, self.rev_unicode_map[k])
+                ss = ss.replace(k, self.rev_unicode_map[k])
         return ss
 
     def __set_type(self, ss, stype):
         return self.type_map[stype](ss)
+
+    @staticmethod
+    def __replace_repeat(text, dicc):
+        for k, v in dicc.iteritems():
+            text = text.replace(k, v)
+        return text
 
     def __dumps(self, obj, nn=0):
         """
@@ -105,11 +109,10 @@ class __STRPY(object):
             try:
                 obj.encode('ascii')
             except UnicodeEncodeError:
-                for k, v in self.unicode_map.iteritems():
-                    obj = obj.replace(k, v)
+                obj = self.__replace_repeat(obj, self.unicode_map)
             ttype = self.__typify(obj)
-            for k, v in self.replace_map.iteritems():
-                obj = obj.replace(k, v)
+            if re.search(self.str_key_regex, obj):
+                obj = self.__replace_repeat(obj, self.str_replace_map)
             full_str += "{%s}%s{/%s}" % (ttype, obj, ttype)
         else:
             ttype = self.__typify(obj)
@@ -139,7 +142,7 @@ class __STRPY(object):
         Returns:
             a python-typed version of the strpy-string.
         """
-        regex = re.compile(r'{([a-zA-Z0-9_]*)}(.*?)(?={/\1})', re.DOTALL)
+        regex = re.compile(r'{([a-zA-Z0-9_]+)}(.*?)(?={/\1})', re.DOTALL)
         match = re.search(regex, obj)
         if not match:
             raise self.StrpyError('Could not parse object "{}". Check syntax.'.format(obj))
@@ -150,10 +153,9 @@ class __STRPY(object):
         elif key.startswith('di'):
             result = dict(self.loads(content))
         else:
-            keyhead = None
-            for x in self.iterables.iterkeys():
-                if key.startswith(x):
-                    keyhead = x
+            keyhead = key[0:2]
+            if keyhead not in self.iterables.keys():
+                raise self.StrpyError('Could not find a type key "{}".'.format(keyhead))
             foundlist = []
             for lkey, lcontent in re.findall(regex, content):
                 if lkey in self.items.iterkeys():
